@@ -1,0 +1,7 @@
+{
+  "name": "Khmer Chess Community",
+  "description": "A high-performance automated chess platform with integrated Gemini coaching, real-time matchmaking architecture, and minimalist aesthetic design.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
