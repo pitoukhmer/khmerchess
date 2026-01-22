@@ -48,13 +48,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoogleLogin, onShowEmailAut
           </div>
           
           <h1 className="text-6xl md:text-9xl font-heavy mb-8 leading-[0.85] tracking-tighter uppercase italic">
-            The Future of <br />
-            <span className="text-[#CCFF00]">Cambodian Chess.</span>
+            THE FUTURE OF <br />
+            <span className="text-[#CCFF00]">CAMBODIAN CHESS.</span>
           </h1>
           
           <p className="max-w-3xl mx-auto text-zinc-500 text-lg md:text-2xl font-medium mb-14 leading-relaxed">
-            Join the world's most advanced e-sports platform built for Cambodia. 
-            Analyze with Titanium AI, play real-time matches, and dominate the ledger.
+            Join the fastest-growing community. Play real-time matches, 
+            analyze with AI, and rise through the ranks on the world's most advanced Khmer Chess engine.
           </p>
           
           <div className="flex flex-col md:flex-row items-center justify-center gap-6">
@@ -97,7 +97,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoogleLogin, onShowEmailAut
               </div>
               <h3 className="text-2xl font-heavy uppercase italic mb-6">Titanium AI</h3>
               <p className="text-zinc-500 text-base leading-relaxed">
-                Analyze your games with our advanced Gemini-powered coach. Technical feedback for every tactical maneuver.
+                Analyze your games with our advanced Gemini-powered engine. Technical feedback for every tactical maneuver.
               </p>
             </div>
 
