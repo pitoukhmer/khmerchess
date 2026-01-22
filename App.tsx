@@ -8,6 +8,7 @@ import {
   ShieldCheck, Send, X, Save, FileText, UserPlus2, Trash2, Camera, ShieldEllipsis, Crown
 } from 'lucide-react';
 import ChessBoard from './components/ChessBoard';
+import LandingPage from './components/LandingPage';
 import { getCoachAnalysis } from './services/geminiService';
 import { 
   auth, 
@@ -65,7 +66,8 @@ interface ChessErrorBoundaryState {
   error: string;
 }
 
-class ChessErrorBoundary extends Component<ChessErrorBoundaryProps, ChessErrorBoundaryState> {
+// Fix: Explicitly use React.Component to ensure TypeScript correctly resolves the base class's properties like state and props.
+class ChessErrorBoundary extends React.Component<ChessErrorBoundaryProps, ChessErrorBoundaryState> {
   constructor(props: ChessErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -168,6 +170,7 @@ const App: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showAuthForm, setShowAuthForm] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
@@ -437,29 +440,59 @@ const App: React.FC = () => {
     </div>
   );
 
-  if (!user) return (
-    <div className="h-screen bg-[#0C0C0C] flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-[#1F1F1F] border border-zinc-800 rounded-xl p-8 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-[#CCFF00]" />
-        <div className="flex flex-col items-center mb-10 text-center">
-          <div className="w-16 h-16 bg-[#CCFF00] rounded flex items-center justify-center text-black shadow-xl mb-4"><Trophy size={32} /></div>
-          <h1 className="font-heavy text-3xl text-[#CCFF00] mb-2 tracking-tight uppercase">Khmer Chess</h1>
-          <p className="text-zinc-500 text-[10px] font-heavy uppercase tracking-widest">Titanium Grade Platform</p>
+  // Phase 6: Traffic Cop Logic
+  if (!user) {
+    if (showAuthForm) {
+      return (
+        <div className="h-screen bg-[#0C0C0C] flex items-center justify-center p-6 relative">
+          <button 
+            onClick={() => setShowAuthForm(false)}
+            className="absolute top-8 left-8 text-zinc-500 hover:text-white flex items-center gap-2 font-heavy uppercase text-[10px] tracking-widest transition-all"
+          >
+            <RotateCcw size={16} /> Return to Landing
+          </button>
+          <div className="max-w-md w-full bg-[#1F1F1F] border border-zinc-800 rounded-xl p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-[#CCFF00]" />
+            <div className="flex flex-col items-center mb-10 text-center">
+              <div className="w-16 h-16 bg-[#CCFF00] rounded flex items-center justify-center text-black shadow-xl mb-4"><Trophy size={32} /></div>
+              <h1 className="font-heavy text-3xl text-[#CCFF00] mb-2 tracking-tight uppercase">Identity Auth</h1>
+              <p className="text-zinc-500 text-[10px] font-heavy uppercase tracking-widest">Enter the Ledger</p>
+            </div>
+            <form onSubmit={handleAuthAction} className="space-y-4">
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-3 px-4 text-sm text-zinc-200 outline-none focus:border-[#CCFF00]" placeholder="Identity (Email)" required />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-3 px-4 text-sm text-zinc-200 outline-none focus:border-[#CCFF00]" placeholder="Cipher (Password)" required />
+              <button type="submit" className="w-full btn-primary py-4">Authorize Access</button>
+            </form>
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-zinc-800"></span></div>
+              <div className="relative flex justify-center text-[10px] uppercase font-heavy tracking-widest"><span className="bg-[#1F1F1F] px-4 text-zinc-600">Secondary Handshake</span></div>
+            </div>
+            <button onClick={handleGoogleSignIn} className="w-full bg-transparent border border-[#CCFF00]/30 hover:border-[#CCFF00] text-white py-4 flex items-center justify-center gap-3 transition-all rounded-lg text-[12px] font-heavy uppercase tracking-widest">
+              <Mail size={18} className="text-[#CCFF00]" /> Google Sync
+            </button>
+            <button onClick={() => setIsSignUp(!isSignUp)} className="w-full mt-6 text-zinc-600 text-[10px] font-heavy uppercase tracking-widest hover:text-white transition-colors">{isSignUp ? 'Back to Login' : 'New Identity'}</button>
+            {authError && <p className="mt-4 text-center text-red-500 text-xs font-mono">{authError}</p>}
+          </div>
         </div>
-        <form onSubmit={handleAuthAction} className="space-y-4">
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-3 px-4 text-sm text-zinc-200 outline-none focus:border-[#CCFF00]" placeholder="Identity (Email)" required />
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-3 px-4 text-sm text-zinc-200 outline-none focus:border-[#CCFF00]" placeholder="Cipher (Password)" required />
-          <button type="submit" className="w-full btn-primary py-4">Authorize Access</button>
-        </form>
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-zinc-800"></span></div>
-          <div className="relative flex justify-center text-[10px] uppercase font-heavy tracking-widest"><span className="bg-[#1F1F1F] px-4 text-zinc-600">Secondary Handshake</span></div>
-        </div>
-        <button onClick={handleGoogleSignIn} className="w-full bg-transparent border border-[#CCFF00]/30 hover:border-[#CCFF00] text-white py-4 flex items-center justify-center gap-3 transition-all rounded-lg text-[12px] font-heavy uppercase tracking-widest">
-          <Mail size={18} className="text-[#CCFF00]" /> Google Sync
-        </button>
-        <button onClick={() => setIsSignUp(!isSignUp)} className="w-full mt-6 text-zinc-600 text-[10px] font-heavy uppercase tracking-widest hover:text-white transition-colors">{isSignUp ? 'Back to Login' : 'New Identity'}</button>
-        {authError && <p className="mt-4 text-center text-red-500 text-xs font-mono">{authError}</p>}
+      );
+    }
+    
+    return (
+      <LandingPage 
+        onGoogleLogin={handleGoogleSignIn} 
+        onShowEmailAuth={() => setShowAuthForm(true)} 
+      />
+    );
+  }
+
+  if (ENABLE_EMAIL_VERIFICATION && user && !user.emailVerified) return (
+    <div key={refreshToggle} className="h-screen bg-[#0C0C0C] flex items-center justify-center p-6 text-center">
+      <div className="max-w-md w-full bg-[#1F1F1F] p-10 rounded-xl border border-[#CCFF00]/20 shadow-2xl">
+        <ShieldAlert className="text-[#CCFF00] mx-auto mb-6" size={64} />
+        <h2 className="text-[#CCFF00] font-heavy text-2xl mb-4">VERIFICATION REQ</h2>
+        <p className="text-zinc-400 text-sm mb-8">Establish credentials via link sent to {user.email}.</p>
+        <button onClick={handleReloadUser} className="btn-primary w-full py-4 mb-4">I've Verified</button>
+        <button onClick={handleLogout} className="text-zinc-600 uppercase text-[10px] font-heavy tracking-widest">Logout</button>
       </div>
     </div>
   );
@@ -531,7 +564,7 @@ const App: React.FC = () => {
                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm border-2 border-zinc-800 gap-8">
                        <Triangle className="text-[#CCFF00] rotate-180" size={48} />
                        <h2 className="text-[#CCFF00] font-heavy uppercase tracking-[0.3em] text-2xl">Engagement</h2>
-                       <div className="grid grid-cols-2 gap-6 w-full max-sm px-4">
+                       <div className="grid grid-cols-2 gap-6 w-full max-w-sm px-4">
                           <button onClick={handleCreateGame} className="flex flex-col items-center gap-4 p-6 bg-[#1F1F1F] border-2 border-zinc-800 hover:border-[#CCFF00] transition-all"><Plus size={32} className="text-[#CCFF00]"/><span className="text-[10px] font-heavy uppercase tracking-widest">Init</span></button>
                           <div className="flex flex-col gap-3 p-6 bg-[#1F1F1F] border-2 border-zinc-800"><UserPlus size={24} className="text-zinc-600 mx-auto"/><input type="text" placeholder="CODE" value={joinIdInput} onChange={(e) => setJoinIdInput(e.target.value)} className="bg-black border border-zinc-800 py-2 text-[10px] font-heavy uppercase text-center focus:border-[#CCFF00] outline-none text-[#CCFF00]"/><button onClick={handleJoinGame} className="btn-primary py-2 text-[10px]">Join</button></div>
                        </div>
