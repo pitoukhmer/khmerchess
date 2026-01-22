@@ -66,7 +66,6 @@ interface ChessErrorBoundaryState {
   error: string;
 }
 
-// Fix: Explicitly use React.Component to ensure TypeScript correctly resolves the base class's properties like state and props.
 class ChessErrorBoundary extends React.Component<ChessErrorBoundaryProps, ChessErrorBoundaryState> {
   constructor(props: ChessErrorBoundaryProps) {
     super(props);
@@ -274,31 +273,19 @@ const App: React.FC = () => {
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) {
-      console.warn("Handshake Aborted: No file selected or user unauthenticated.");
-      return;
-    }
-
+    if (!file || !user) return;
     const MAX_SIZE = 10 * 1024 * 1024;
-    console.log(`Analyzing payload... Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
-    
     if (file.size > MAX_SIZE) {
-      alert(`Mothership Intercept: Payload too large. Limit is 10MB. Detected: ${(file.size / (1024 * 1024)).toFixed(2)}MB.`);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      alert(`Mothership Intercept: Payload too large. Limit is 10MB.`);
       return;
     }
-
-    console.log("Starting upload...");
     setIsUploadingAvatar(true);
     try {
       await uploadAvatar(user.uid, file);
-      console.log("Avatar successfully committed to Mothership.");
     } catch (err: any) {
-      console.error("Upload Error Details:", err);
-      alert("UPLOAD FAILED: " + (err.message || "Unknown error during transmission."));
+      alert("UPLOAD FAILED: " + err.message);
     } finally {
       setIsUploadingAvatar(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -312,14 +299,11 @@ const App: React.FC = () => {
 
   const handleSaveGame = async () => {
     if (!user || !newGameTitle || !newGamePgn) return;
-    
-    // Safety check: Backend integrity enforcement
     if (savedGames.length >= FREE_PLAN_LIMIT) {
       setIsLibraryModalOpen(false);
       setIsUpgradeModalOpen(true);
       return;
     }
-
     setIsProcessing(true);
     try {
       await saveGameToLibrary(user.uid, newGameTitle, newGamePgn);
@@ -360,9 +344,6 @@ const App: React.FC = () => {
     try {
       if (isSignUp) {
         const userCred = await createUserWithEmailAndPassword(auth, email, password);
-        if (ENABLE_EMAIL_VERIFICATION) {
-          await sendEmailVerification(userCred.user);
-        }
         const username = email.split('@')[0];
         await setDoc(doc(db, "users", userCred.user.uid), {
           uid: userCred.user.uid, username, elo: 1200, country: "KH",
@@ -404,17 +385,6 @@ const App: React.FC = () => {
     await firebaseSignOut(auth);
   };
 
-  const handleReloadUser = async () => {
-    if (user) {
-      try {
-        await reload(user);
-        setRefreshToggle(prev => prev + 1);
-      } catch (err: any) {
-        alert("Reload failed: " + err.message);
-      }
-    }
-  };
-
   const handleMove = async (move: Move) => {
     if (!activeGameId || !gameState) return;
     const currentFen = (!gameState.fen || gameState.fen === 'start') ? STARTING_FEN : gameState.fen;
@@ -440,7 +410,7 @@ const App: React.FC = () => {
     </div>
   );
 
-  // Phase 6: Traffic Cop Logic
+  // Traffic Cop Logic: Auth Router
   if (!user) {
     if (showAuthForm) {
       return (
@@ -485,18 +455,6 @@ const App: React.FC = () => {
     );
   }
 
-  if (ENABLE_EMAIL_VERIFICATION && user && !user.emailVerified) return (
-    <div key={refreshToggle} className="h-screen bg-[#0C0C0C] flex items-center justify-center p-6 text-center">
-      <div className="max-w-md w-full bg-[#1F1F1F] p-10 rounded-xl border border-[#CCFF00]/20 shadow-2xl">
-        <ShieldAlert className="text-[#CCFF00] mx-auto mb-6" size={64} />
-        <h2 className="text-[#CCFF00] font-heavy text-2xl mb-4">VERIFICATION REQ</h2>
-        <p className="text-zinc-400 text-sm mb-8">Establish credentials via link sent to {user.email}.</p>
-        <button onClick={handleReloadUser} className="btn-primary w-full py-4 mb-4">I've Verified</button>
-        <button onClick={handleLogout} className="text-zinc-600 uppercase text-[10px] font-heavy tracking-widest">Logout</button>
-      </div>
-    </div>
-  );
-
   const playerColor = gameState?.black?.uid === user?.uid ? 'b' : 'w';
   const isMyTurn = (gameState?.turn || 'w') === playerColor && gameState?.status === GameStatus.ACTIVE;
 
@@ -523,25 +481,12 @@ const App: React.FC = () => {
           <div className="flex items-center gap-3 mb-6">
             <div className="relative group cursor-pointer">
               <div className="w-10 h-10 rounded-lg overflow-hidden border border-zinc-700 bg-zinc-900 flex items-center justify-center">
-                {isUploadingAvatar ? (
-                  <Loader2 className="animate-spin text-[#CCFF00]" size={16} />
-                ) : (
-                  <img src={profile?.avatarUrl} className="w-full h-full object-cover" />
-                )}
+                {isUploadingAvatar ? <Loader2 className="animate-spin text-[#CCFF00]" size={16} /> : <img src={profile?.avatarUrl} className="w-full h-full object-cover" />}
               </div>
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
-              >
+              <button onClick={() => fileInputRef.current?.click()} className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
                 <Camera size={14} className="text-[#CCFF00]" />
               </button>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept="image/*" 
-                onChange={handleAvatarUpload}
-              />
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
             </div>
             <div className="hidden md:block">
               <p className="text-white text-[11px] font-heavy uppercase truncate max-w-[120px]">{profile?.username}</p>
@@ -587,47 +532,6 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* SOCIAL TAB */}
-        {activeTab === 'social' && (
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center justify-between mb-10">
-              <div>
-                <h2 className="text-2xl font-heavy text-white uppercase tracking-tighter italic">Peer Handshake</h2>
-                <p className="text-[10px] text-zinc-500 font-heavy uppercase tracking-widest">Active Pilot Contacts</p>
-              </div>
-              <button onClick={() => setIsFriendModalOpen(true)} className="btn-primary px-6 py-3 flex items-center gap-2 text-[10px] shadow-neon">
-                <UserPlus2 size={16} /> Add Contact
-              </button>
-            </div>
-            <div className="space-y-3">
-              {friends.length === 0 ? (
-                <div className="p-12 border-2 border-dashed border-zinc-800 text-center rounded-2xl">
-                   <Users className="mx-auto text-zinc-700 mb-4" size={48} />
-                   <p className="text-zinc-500 font-heavy uppercase text-[10px] tracking-widest">Isolated Signal. No peers connected.</p>
-                </div>
-              ) : (
-                friends.map((friend) => (
-                  <div key={friend.id} className="bg-[#1F1F1F] p-4 flex items-center justify-between border border-zinc-800 hover:border-[#CCFF00]/50 transition-colors group">
-                    <div className="flex items-center gap-4">
-                       <div className="relative">
-                         <div className="w-12 h-12 bg-zinc-900 rounded-lg flex items-center justify-center text-zinc-500 font-heavy border border-zinc-800 overflow-hidden">
-                           {friend.avatarUrl ? <img src={friend.avatarUrl} className="w-full h-full object-cover" /> : friend.username[0].toUpperCase()}
-                         </div>
-                         <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-[#1F1F1F] ${friend.status === 'online' ? 'bg-[#CCFF00]' : 'bg-zinc-600'}`} />
-                       </div>
-                       <div>
-                         <h4 className="text-white font-heavy uppercase tracking-tighter">{friend.username}</h4>
-                         <p className="text-[9px] text-zinc-600 font-heavy uppercase tracking-widest">Last Sync: Established</p>
-                       </div>
-                    </div>
-                    <button className="p-3 text-zinc-700 hover:text-[#CCFF00] transition-colors"><MessageSquare size={18} /></button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
         {/* LIBRARY TAB */}
         {activeTab === 'learn' && (
           <div className="max-w-5xl mx-auto">
@@ -651,25 +555,47 @@ const App: React.FC = () => {
               {savedGames.length === 0 ? (
                  <div className="col-span-full p-20 border-2 border-dashed border-zinc-800 text-center rounded-2xl">
                     <FileText className="mx-auto text-zinc-700 mb-4" size={64} />
-                    <p className="text-zinc-500 font-heavy uppercase text-[10px] tracking-widest">No tactical archives found. Secure your wins.</p>
+                    <p className="text-zinc-500 font-heavy uppercase text-[10px] tracking-widest">No tactical archives found.</p>
                  </div>
               ) : (
                 savedGames.map((game) => (
-                  <div key={game.id} className="bg-[#1F1F1F] p-6 border border-zinc-800 flex flex-col gap-6 group hover:border-[#CCFF00] transition-all relative overflow-hidden">
+                  <div key={game.id} className="bg-[#1F1F1F] p-6 border border-zinc-800 flex flex-col gap-6 group hover:border-[#CCFF00] transition-all">
                     <div className="flex items-start justify-between">
-                       <h4 className="text-white font-heavy uppercase tracking-tight text-lg leading-tight flex-1 pr-4">{game.title}</h4>
+                       <h4 className="text-white font-heavy uppercase tracking-tight text-lg leading-tight flex-1">{game.title}</h4>
                        <button onClick={() => handleDeleteGame(game.id)} className="text-zinc-700 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={16}/></button>
                     </div>
-                    <div className="bg-black/40 p-3 rounded font-mono text-[9px] text-[#CCFF00] overflow-hidden whitespace-nowrap overflow-ellipsis">
-                       {game.pgn}
-                    </div>
-                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-zinc-800">
-                       <span className="text-[9px] text-zinc-600 font-heavy uppercase">{new Date(game.createdAt?.toDate()).toLocaleDateString()}</span>
-                       <button className="text-[10px] font-heavy uppercase text-[#CCFF00] flex items-center gap-1 group-hover:translate-x-1 transition-transform">Analyze Dossier <Swords size={12}/></button>
-                    </div>
+                    <div className="bg-black/40 p-3 rounded font-mono text-[9px] text-[#CCFF00] overflow-hidden whitespace-nowrap overflow-ellipsis">{game.pgn}</div>
+                    <button className="text-[10px] font-heavy uppercase text-[#CCFF00] flex items-center gap-1 group-hover:translate-x-1 transition-transform">Analyze Dossier <Swords size={12}/></button>
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        )}
+
+        {/* UPGRADE MODAL: Neon Green Refined */}
+        {isUpgradeModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
+            <div className="bg-[#1F1F1F] border-2 border-orange-500/30 p-10 w-full max-w-md relative overflow-hidden group shadow-2xl">
+               <button onClick={() => setIsUpgradeModalOpen(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white z-10"><X size={20}/></button>
+               <div className="relative z-10">
+                 <div className="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center mb-6 border border-orange-500/20">
+                   <Crown size={32} className="text-orange-500" />
+                 </div>
+                 <h3 className="text-orange-500 font-heavy uppercase mb-2 tracking-widest text-xl italic">Library Limit Reached</h3>
+                 <p className="text-zinc-400 text-sm leading-relaxed mb-8">
+                   You have reached the limit of <span className="text-white font-heavy">{FREE_PLAN_LIMIT} saved games</span> on the Free Plan. Upgrade for unlimited tactical archives.
+                 </p>
+                 <div className="space-y-3">
+                    <button 
+                      onClick={() => alert("Mothership Update: Payment Gateway Integration Coming Soon!")} 
+                      className="w-full bg-[#CCFF00] hover:brightness-110 text-black font-heavy uppercase py-4 rounded-lg tracking-widest flex items-center justify-center gap-2 transition-all shadow-neon"
+                    >
+                      Upgrade to Pro (Unlimited)
+                    </button>
+                    <button onClick={() => setIsUpgradeModalOpen(false)} className="w-full text-zinc-600 uppercase font-heavy text-[10px] tracking-[0.2em] py-2 hover:text-zinc-400 transition-colors">Return to Command</button>
+                 </div>
+               </div>
             </div>
           </div>
         )}
@@ -692,57 +618,6 @@ const App: React.FC = () => {
                   <button onClick={handleSaveGame} disabled={isProcessing} className="w-full btn-primary py-4 text-sm flex items-center justify-center gap-2">
                     {isProcessing ? <Loader2 className="animate-spin" /> : <><Save size={18}/> Commit to Library</>}
                   </button>
-               </div>
-            </div>
-          </div>
-        )}
-
-        {/* UPGRADE MODAL */}
-        {isUpgradeModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-            <div className="bg-[#1F1F1F] border-2 border-orange-500/50 p-10 w-full max-w-md relative overflow-hidden group">
-               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                 <ShieldEllipsis size={120} className="text-orange-500" />
-               </div>
-               <button onClick={() => setIsUpgradeModalOpen(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white z-10"><X size={20}/></button>
-               
-               <div className="relative z-10">
-                 <div className="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center mb-6 border border-orange-500/30">
-                   <Crown size={32} className="text-orange-500" />
-                 </div>
-                 
-                 <h3 className="text-orange-500 font-heavy uppercase mb-2 tracking-widest text-xl italic">Library Limit Reached</h3>
-                 <p className="text-zinc-400 text-sm leading-relaxed mb-8">
-                   You have reached the limit of <span className="text-white font-heavy">{FREE_PLAN_LIMIT} saved games</span> on the Free Plan. Upgrade to the Titanium Tier for unlimited tactical archives and high-performance analysis.
-                 </p>
-                 
-                 <div className="space-y-3">
-                    <button 
-                      onClick={() => alert("Mothership Update: Payment Gateway Integration Coming Soon!")} 
-                      className="w-full bg-orange-500 hover:bg-orange-600 text-black font-heavy uppercase py-4 rounded-lg tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg shadow-orange-500/20"
-                    >
-                      Upgrade to Pro (Unlimited)
-                    </button>
-                    <button onClick={() => setIsUpgradeModalOpen(false)} className="w-full text-zinc-600 uppercase font-heavy text-[10px] tracking-[0.2em] py-2 hover:text-zinc-400 transition-colors">
-                      Return to Command
-                    </button>
-                 </div>
-               </div>
-            </div>
-          </div>
-        )}
-
-        {isFriendModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-[#1F1F1F] border-2 border-zinc-800 p-8 w-full max-w-md relative">
-               <button onClick={() => setIsFriendModalOpen(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X size={20}/></button>
-               <h3 className="text-[#CCFF00] font-heavy uppercase mb-6 tracking-widest">Signal Handshake</h3>
-               <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-heavy text-zinc-500 uppercase tracking-widest">Pilot Identity (Username or Email)</label>
-                    <input type="text" value={newFriendName} onChange={(e) => setNewFriendName(e.target.value)} className="w-full bg-black border border-zinc-800 p-3 text-white text-sm outline-none focus:border-[#CCFF00]" placeholder="CaptainVandeth"/>
-                  </div>
-                  <button onClick={handleAddFriend} disabled={isProcessing} className="w-full btn-primary py-4 text-sm">Initialize Contact</button>
                </div>
             </div>
           </div>
