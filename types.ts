@@ -41,6 +41,21 @@ export interface GameSession {
   timeControl: number; // in seconds
 }
 
+export interface SavedGame {
+  id: string;
+  title: string;
+  pgn: string;
+  createdAt: any;
+}
+
+export interface Friend {
+  id: string;
+  username: string;
+  status: 'online' | 'offline';
+  avatarUrl?: string;
+  addedAt: any;
+}
+
 export interface Puzzle {
   id: string;
   fen: string;

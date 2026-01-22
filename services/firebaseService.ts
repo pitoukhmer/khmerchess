@@ -6,7 +6,12 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  sendEmailVerification,
+  reload,
+  updateProfile
 } from "firebase/auth";
 import type { User } from "firebase/auth";
 import { 
@@ -19,11 +24,19 @@ import {
   collection,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
   where,
   limit,
-  getDocs
+  getDocs,
+  orderBy
 } from "firebase/firestore";
+import { 
+  getStorage, 
+  ref, 
+  uploadBytes, 
+  getDownloadURL 
+} from "firebase/storage";
 import type { DocumentData } from "firebase/firestore";
 import { GameStatus } from "../types";
 
@@ -41,6 +54,11 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
+
+const googleProvider = new GoogleAuthProvider();
+
+export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
 
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -81,17 +99,82 @@ export const joinGame = async (gameId: string, user: User, profile: any) => {
   return gameId;
 };
 
+// Phase 3: Dashboard Services
+export const saveGameToLibrary = async (uid: string, title: string, pgn: string) => {
+  return await addDoc(collection(db, "users", uid, "saved_games"), {
+    title,
+    pgn,
+    createdAt: serverTimestamp()
+  });
+};
+
+export const addFriendToContacts = async (uid: string, usernameOrEmail: string) => {
+  return await addDoc(collection(db, "users", uid, "friends"), {
+    username: usernameOrEmail,
+    status: 'offline',
+    addedAt: serverTimestamp()
+  });
+};
+
+// Phase 4: Storage Services - Enhanced with Upsert Logic
+export const uploadAvatar = async (uid: string, file: File) => {
+  console.log("Mothership Communication: Preparing payload for upload...");
+  
+  // Validate file size (10MB threshold)
+  const MAX_SIZE = 10 * 1024 * 1024;
+  if (file.size > MAX_SIZE) {
+    throw new Error(`Mothership Limit: Image must be under 10MB (Detected: ${(file.size / (1024 * 1024)).toFixed(2)}MB).`);
+  }
+
+  const storageRef = ref(storage, `user_avatars/${uid}/profile.jpg`);
+  
+  // Crucial: Set content type to avoid CORS/MIME issues
+  const metadata = {
+    contentType: file.type,
+  };
+
+  console.log(`Starting binary transfer to user_avatars/${uid}/profile.jpg...`);
+  
+  await uploadBytes(storageRef, file, metadata);
+  
+  console.log("Transfer successful. Fetching downlink...");
+  const downloadURL = await getDownloadURL(storageRef);
+  
+  console.log("Downlink established:", downloadURL);
+
+  // Update Firestore Source of Truth
+  // FIX: Using setDoc with { merge: true } instead of updateDoc to handle missing documents
+  const userRef = doc(db, "users", uid);
+  await setDoc(userRef, { 
+    avatarUrl: downloadURL,
+    lastProfileUpdate: serverTimestamp() 
+  }, { merge: true });
+  
+  // Sync Firebase Auth Profile for fallback
+  const currentUser = auth.currentUser;
+  if (currentUser) {
+    await updateProfile(currentUser, { photoURL: downloadURL });
+  }
+
+  console.log("Profile synchronization with Firestore complete.");
+  return downloadURL;
+};
+
 export { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   onAuthStateChanged,
+  sendEmailVerification,
+  reload,
   collection,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
   where,
   limit,
-  getDocs
+  getDocs,
+  orderBy
 };
 export const firebaseSignOut = signOut;
 
