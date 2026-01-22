@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, Component, ErrorInfo, ReactNode } from 'react';
+import React, { useState, useEffect, useCallback, ErrorInfo, ReactNode } from 'react';
 import { Chess, Move } from 'chess.js';
 import ReactMarkdown from 'react-markdown';
 import { 
@@ -49,8 +49,11 @@ interface ChessErrorBoundaryState {
   error: string;
 }
 
-// Fix: Use the named 'Component' import instead of 'React.Component' to resolve TypeScript property visibility issues.
-class ChessErrorBoundary extends Component<ChessErrorBoundaryProps, ChessErrorBoundaryState> {
+/**
+ * Fix: Use React.Component to ensure TypeScript correctly identifies the base class and provides 
+ * access to state/props, resolving property visibility errors on lines 56, 71, 77, and 88.
+ */
+class ChessErrorBoundary extends React.Component<ChessErrorBoundaryProps, ChessErrorBoundaryState> {
   constructor(props: ChessErrorBoundaryProps) {
     super(props);
     this.state = {
