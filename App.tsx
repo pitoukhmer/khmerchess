@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import ChessBoard from './components/ChessBoard';
 import LandingPage from './components/LandingPage';
+import InstallPrompt from './components/InstallPrompt';
 import { getCoachAnalysis, getBotMove } from './services/geminiService';
 import { 
   auth, 
@@ -57,17 +58,22 @@ const playSound = (type: 'move' | 'capture' | 'check' | 'game_end') => {
 interface ChessErrorBoundaryProps { children?: ReactNode; }
 interface ChessErrorBoundaryState { hasError: boolean; error: string; }
 
-class ChessErrorBoundary extends React.Component<ChessErrorBoundaryProps, ChessErrorBoundaryState> {
+// Fix: Use explicitly imported Component and define state property to resolve type inference issues where 'state' and 'props' were reported as missing.
+class ChessErrorBoundary extends Component<ChessErrorBoundaryProps, ChessErrorBoundaryState> {
+  state: ChessErrorBoundaryState = { hasError: false, error: '' };
+
   constructor(props: ChessErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: '' };
   }
+
   static getDerivedStateFromError(error: Error): ChessErrorBoundaryState {
     return { hasError: true, error: error.message };
   }
+
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ChessBoard Crash:", error, errorInfo);
   }
+
   render() {
     if (this.state.hasError) {
       return (
@@ -327,6 +333,10 @@ const App: React.FC = () => {
               <span className="hidden md:block font-heavy uppercase text-[11px] tracking-widest">{tab.label}</span>
             </button>
           ))}
+          
+          <div className="pt-8 px-3">
+            <InstallPrompt />
+          </div>
         </div>
         <div className="mt-auto px-4 py-6 border-t border-zinc-800/50">
           <div className="flex items-center gap-3 mb-6">
@@ -362,7 +372,7 @@ const App: React.FC = () => {
                          <p className="text-zinc-600 font-heavy text-[10px] uppercase tracking-widest">Scanning for active pilots...</p>
                        </div>
                        
-                       <div className="w-full max-w-lg grid md:grid-cols-2 gap-6">
+                       <div className="w-full max-lg grid md:grid-cols-2 gap-6">
                           <button onClick={handleCreateGame} className="flex flex-col items-center gap-4 p-8 bg-[#1F1F1F] border-2 border-zinc-800 hover:border-[#CCFF00] transition-all group">
                              <Plus size={32} className="text-[#CCFF00] group-hover:scale-125 transition-transform"/>
                              <span className="text-[11px] font-heavy uppercase tracking-widest">Host Match</span>
